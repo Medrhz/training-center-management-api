@@ -72,20 +72,41 @@ design.
 | FR-13 | List and search courses.           | Agreed |
 | FR-14 | Define and update course capacity. | Agreed |
 
-**Initial data proposal:** course ID, title, description, capacity, status. `ACTIVE` and `ARCHIVED` are agreed statuses;
-an initial `DRAFT` status is proposed but not yet binding.
+**Course Lifecycle — Agreed**
+
+A newly created course starts with DRAFT status.
+
+- DRAFT: The course is not available for enrollment.
+- ACTIVE: The course accepts eligible enrollment requests.
+- ARCHIVED: The course no longer accepts enrollment requests.
+
+ARCHIVED is a terminal status. An archived course cannot
+be reactivated.
+
+If the training center wants to offer the same training
+again, it creates a new course with a new identity.
+
+The archived course and its enrollment history are preserved.
+Historical enrollments are not copied into the new course.
+
+**Initial data proposal:** Course ID, title, description, capacity, and status.
 
 ### 4.3 Course Sessions
 
-| ID    | Requirement                                | Status   |
-|-------|--------------------------------------------|----------|
-| FR-15 | Schedule a session for an existing course. | Proposed |
-| FR-16 | Reschedule or update a session.            | Proposed |
-| FR-17 | View sessions belonging to a course.       | Proposed |
+| ID    | Requirement                                | Status |
+|-------|--------------------------------------------|--------|
+| FR-15 | Schedule a session for an existing course. | Agreed |
+| FR-16 | Reschedule or update a session.            | Agreed |
+| FR-17 | View sessions belonging to a course.       | Agreed |
 
-**Initial data proposal:** date, start time, end time. Enrollment is **into a course**, not into an individual session.
-Room allocation, teacher assignment, attendance, and timetabling conflicts are outside the MVP unless a specific need is
-later established.
+**Agreed MVP scope:** Each course session has a date,
+start time, and end time.
+
+Sessions belong to a course. Enrollment is into the
+course, not into individual sessions.
+
+Teacher assignments, room management, and scheduling
+conflict detection are outside the MVP.
 
 ### 4.4 Enrollment Management
 
@@ -122,16 +143,18 @@ student's record or previously confirmed registrations are deleted.
 
 ### 5.2 Course Rules
 
-| ID    | Rule                                                                                      | Status   |
-|-------|-------------------------------------------------------------------------------------------|----------|
-| BR-07 | A course must exist before an enrollment request can reference it.                        | Agreed   |
-| BR-08 | Only `ACTIVE` courses accept new enrollment requests.                                     | Agreed   |
-| BR-09 | Only `ACTIVE` courses allow confirmation of pending enrollments.                          | Agreed   |
-| BR-10 | Course capacity must be greater than zero.                                                | Proposed |
-| BR-11 | Capacity cannot be reduced below the current confirmed enrollment count.                  | Proposed |
-| BR-12 | `ARCHIVED` courses cannot accept new enrollment requests.                                 | Agreed   |
-| BR-13 | Archiving a course preserves its previously confirmed enrollments and historical records. | Proposed |
-| BR-14 | Archiving a course cancels its pending enrollment requests.                               | Proposed |
+| ID    | Rule                                                                                              | Status |
+|-------|---------------------------------------------------------------------------------------------------|--------|
+| BR-07 | A course must exist before an enrollment request can reference it.                                | Agreed |
+| BR-08 | Only `ACTIVE` courses accept new enrollment requests.                                             | Agreed |
+| BR-09 | Only `ACTIVE` courses allow confirmation of pending enrollments.                                  | Agreed |
+| BR-10 | Course capacity must be greater than zero.                                                        | Agreed |
+| BR-11 | Capacity cannot be reduced below the current confirmed enrollment count.                          | Agreed |
+| BR-12 | `ARCHIVED` courses cannot accept new enrollment requests.                                         | Agreed |
+| BR-13 | Archiving a course preserves its previously confirmed enrollments and historical records.         | Agreed |
+| BR-14 | Archiving a course cancels its pending enrollment requests.                                       | Agreed |
+| BR-32 | A newly created course starts in DRAFT status.                                                    | Agreed |
+| BR-33 | ARCHIVED is terminal. Offering the training again requires a new course with a distinct identity. | Agreed |
 
 ### 5.3 Enrollment and Capacity Rules
 
@@ -155,18 +178,28 @@ initial request creation.
 
 ### 5.4 FIFO and Automatic Promotion
 
-| ID    | Rule                                                                                                                                   | Status   |
-|-------|----------------------------------------------------------------------------------------------------------------------------------------|----------|
-| BR-26 | Eligible pending requests take priority in ascending order of request creation time (FIFO).                                            | Agreed   |
-| BR-27 | An ineligible older request must not block an eligible later request.                                                                  | Agreed   |
-| BR-28 | Cancelling a `CONFIRMED` enrollment automatically triggers consideration of the oldest eligible pending request for the released seat. | Agreed   |
-| BR-29 | Cancelling a `PENDING` enrollment does not release any reserved seat because pending requests do not reserve capacity.                 | Agreed   |
-| BR-30 | Equal request timestamps are resolved with deterministic tie-breaking (e.g., request ID).                                              | Proposed |
-| BR-31 | Automatic confirmation must satisfy current student eligibility, course status, duplicate rules, and capacity.                         | Agreed   |
+| ID    | Rule                                                                                                                                   | Status |
+|-------|----------------------------------------------------------------------------------------------------------------------------------------|--------|
+| BR-26 | Eligible pending requests take priority in ascending order of request creation time (FIFO).                                            | Agreed |
+| BR-27 | An ineligible older request must not block an eligible later request.                                                                  | Agreed |
+| BR-28 | Cancelling a `CONFIRMED` enrollment automatically triggers consideration of the oldest eligible pending request for the released seat. | Agreed |
+| BR-29 | Cancelling a `PENDING` enrollment does not release any reserved seat because pending requests do not reserve capacity.                 | Agreed |
+| BR-30 | Equal request timestamps are resolved with deterministic tie-breaking (e.g., request ID).                                              | Agreed |
+| BR-31 | Automatic confirmation must satisfy current student eligibility, course status, duplicate rules, and capacity.                         | Agreed |
+| BR-34 | Manual confirmation must reject a later eligible request when an older eligible pending request exists for the same course.            | Agreed |s
 
-**Manual confirmation boundary:** FR-19 allows staff-initiated confirmation, but confirmation must respect agreed FIFO
-priority. The exact handling of an attempt to manually select a later eligible request is an **open decision**: reject
-it or confirm the oldest eligible request instead. Do not silently allow FIFO bypass.
+**Manual Confirmation — Agreed**
+
+Staff may manually confirm a pending enrollment only when
+that enrollment is the oldest eligible pending request
+for the course.
+
+If an older eligible pending request exists, the
+confirmation is rejected.
+
+Ineligible requests do not block later eligible requests.
+
+No manual FIFO override is supported in the MVP.
 
 ## 6. Enrollment State Model
 
@@ -279,21 +312,80 @@ remains confirmed.
 **when** both requests execute,  
 **then** at most one additional enrollment becomes confirmed.
 
+### AC-10 — Course Capacity Update
+
+**Given** an ACTIVE course with capacity 20
+And 18 CONFIRMED enrollments
+
+**When** staff update capacity to 15
+
+**Then** the operation is rejected
+And the course capacity remains 20
+And all existing enrollments remain unchanged.
+
+**When** staff update capacity to 18 or 25
+
+**Then** the operation is accepted.
+
+### AC-11 — Manual Confirmation Respects FIFO
+
+**Given** a course with one available seat
+And two eligible PENDING enrollments
+And Youssef submitted his request before Sara
+
+**When** staff attempt to confirm Sara's enrollment
+
+**Then** the operation is rejected
+And Sara remains PENDING
+And the available seat remains unchanged.
+
+**When** staff confirm Youssef's enrollment
+
+**Then** Youssef becomes CONFIRMED
+And the available seat count becomes zero.
+
+### AC-12 — Course Archiving
+
+**Given** an ACTIVE course with:
+
+- 15 CONFIRMED enrollments
+- 5 PENDING enrollments
+
+**When** staff archive the course
+
+**Then** the course status becomes ARCHIVED
+And the 15 CONFIRMED enrollments remain unchanged
+And the 5 PENDING enrollments become CANCELLED
+And all enrollment history is preserved.
+
+**When** staff attempt to reactivate the archived course
+
+**Then** the operation is rejected.
+
 ## 11. Open Decisions and Explicit Assumptions
 
-**Proposed defaults requiring confirmation:**
+### Confirmed Decisions
 
-1. A new course starts as `DRAFT`, then can become `ACTIVE`.
-2. Archived courses retain confirmed enrollments but cancel pending ones.
-3. Course capacity is a positive integer and cannot be reduced below confirmed count.
-4. Sessions have a date, start time, and end time; conflicts and teachers are not managed in the MVP.
-5. Pending requests with identical timestamps are ordered by stable enrollment ID.
-6. Manual confirmation of a later pending request should be rejected if an older eligible request exists (recommended).
+- New courses start in `DRAFT` status.
+- `ARCHIVED` is a terminal course status.
+- Archived courses cannot be reactivated.
+- Reoffering training requires creating a new course with a distinct identity.
+- Course capacity cannot be reduced below the current number of confirmed enrollments.
+- Manual enrollment confirmation must respect FIFO priority.
+- Manually confirming a later eligible request is rejected when an older eligible request exists.
+- Archiving a course preserves CONFIRMED enrollments and
+  cancels PENDING enrollments.
+- Course capacity must be a positive integer.
+- Course sessions use date, start time, and end time.
+- Teacher assignments and scheduling conflicts are
+  outside the MVP.
+- Pending enrollments with identical creation timestamps
+  are ordered by enrollment ID.
 
-**Additional details for design phase:**
+### Additional Details for Design Phase
 
 - Exact student/profile fields, mandatory vs optional values, and uniqueness requirements (including email).
-- Exact course fields and whether archiving is reversible.
+- Exact course fields and their validation requirements.
 - Rules for updating already-started or past sessions.
 - Whether a cancellation must include a reason and who records it.
 - How staff obtain API access during this pre-security educational phase.
