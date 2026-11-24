@@ -1,0 +1,174 @@
+=================== Business Objectives ===================
+ID	    Business Objective
+BO-01	Centralize student information
+BO-02	Manage training courses and their sessions
+BO-03	Manage enrollment requests and confirmations
+BO-04	Prevent capacity violations and invalid registrations
+BO-05	Preserve enrollment history for tracking and analysis
+=================== System Actors ===================
+Training Center Staff
+===================  Functional Requirements ===================
+Module 01 — Student Management
+ID	    Functional Requirement	             Status
+FR-01	Register a new student	             Agreed
+FR-02	View student details	             Agreed
+FR-03	Update student information	         Agreed
+FR-04	List and search students	         Agreed
+FR-05	Activate a student                 	 Agreed
+FR-06	Deactivate a student	             Agreed
+FR-07	Manage student profile information	 Agreed
+
+Student ID · Full Name · Email · Phone · Status
+---------------------------------------------------
+Module 02 — Course Management
+ID	    Functional Requirement	             Status
+FR-08	Create a training course	         Agreed
+FR-09	View course details	                 Agreed
+FR-10	Update course information	         Agreed
+FR-11	Activate a course	                 Agreed
+FR-12	Archive a course	                 Agreed
+FR-13	List and search courses	             Agreed
+FR-14	Define and manage course capacity	 Agreed
+
+Course ID · Title · Description · Capacity · Status
+
+Status
+DRAFT, ACTIVE, ARCHIVED
+---------------------------------------------------
+Module 03 — Course Sessions
+ID	    Functional Requirement	    Status
+FR-15	Schedule a course session	Proposed
+FR-16	Update a scheduled session	Proposed
+FR-17	View sessions of a course	Proposed
+
+Session Date · Start Time · End Time
+---------------------------------------------------
+Module 04 — Enrollment Management
+
+ID	        Functional Requirement   	                                                  Status
+FR-18	Request enrollment in a course	                                                  Agreed
+FR-19	Confirm a pending enrollment	                                                  Agreed
+FR-20	Cancel an enrollment	                                                          Agreed
+FR-21	Automatically promote eligible pending enrollment after confirmed cancellation	  Agreed
+FR-22	View enrollment details	                                                          Agreed
+FR-23	View student enrollment history	                                                  Agreed
+FR-24	View enrollments for a course	                                                  Agreed
+FR-25	View available capacity	                                                          Agreed
+FR-26	List and filter enrollments	                                                      Agreed
+PENDING,CONFIRMED,CANCELLED
+
+
+=================== Business Rules ===================
+A. Student Business Rules
+ID	    Business Rule	                                                            Status
+BR-01	Only existing students may be enrolled	                                    Agreed
+BR-02	Only ACTIVE students may create new enrollment requests	                    Agreed
+BR-03	Only ACTIVE students are eligible for enrollment confirmation	            Agreed
+BR-04	Deactivating a student cancels their PENDING enrollments	                Agreed
+BR-05	Deactivating a student does not cancel their CONFIRMED enrollments	        Agreed
+BR-06	Reactivating a student does not restore previously cancelled enrollments	Agreed
+
+B. Course Business Rules
+ID	     Business Rule	                                                           Status
+BR-07	Course must exist before enrollment	                                       Agreed
+BR-08	Only ACTIVE courses accept enrollment requests	                           Agreed
+BR-09	Only ACTIVE courses allow pending enrollment confirmation	               Agreed
+BR-10	Course capacity must be greater than zero	                               Proposed
+BR-11	Capacity cannot be reduced below the number of confirmed enrollments	   Proposed
+BR-12	Archived courses cannot accept new registrations	                       Agreed
+BR-13	Archiving a course preserves its confirmed enrollment history	           Proposed
+BR-14	Archiving a course cancels its pending enrollment requests	               Proposed
+
+C. Enrollment Business Rules
+ID	    Business Rule	                                                           Status
+BR-15	Enrollment must reference an existing student and course	               Agreed
+BR-16	New enrollment requests start as PENDING	                               Agreed
+BR-17	Pending enrollments do not reserve seats	                               Agreed
+BR-18	Only CONFIRMED enrollments consume capacity	                               Agreed
+BR-19	Confirmed enrollments must never exceed course capacity                    Agreed
+BR-20	A student cannot have two active enrollments in the same course	           Agreed
+BR-21	Cancelled enrollments remain in history	                                   Agreed
+BR-22	Cancelled enrollments cannot be reactivated	                               Agreed
+BR-23	A student may create a new enrollment after cancellation, if eligible	   Agreed
+BR-24	Only a PENDING enrollment can transition to CONFIRMED	                   Agreed
+BR-25	PENDING and CONFIRMED enrollments can transition to CANCELLED	           Agreed
+
+D. FIFO & Automatic Confirmation Rules
+ID	    Business Rule	                                                                                      Status
+BR-26	Eligible pending requests are processed oldest first	                                              Agreed
+BR-27	Ineligible requests must not block eligible requests behind them	                                  Agreed
+BR-28	Cancelling a CONFIRMED enrollment triggers automatic promotion when eligible pending requests exist	  Agreed
+BR-29	Cancelling a PENDING enrollment does not release a reserved seat	                                  Agreed
+BR-30	Tied request timestamps use a deterministic ordering rule	                                          Proposed
+BR-31	Promotion must not violate student, course or capacity rules	                                      Agreed
+=================== 7. Business Invariants   ===================
+Domain Invariant
+Invariant 01 — Capacity
+Invariant 02 — Duplicate Enrollment
+Invariant 03 — Terminal Cancellation
+=================== 8. Non-Functional Requirements ===================
+
+ID	    Requirement	                    Why
+NFR-01	Data Integrity	نحافظو على صحة العلاقات والمعطيات
+NFR-02	Consistency	ما نسمحوش بحالات تسجيل متناقضة
+NFR-03	Transactional Operations    	العمليات المرتبطة خاص تتنفذ بتناسق
+NFR-04	Reliable Error Handling	النظام يرجع أخطاء واضحة
+NFR-05	Maintainability	الكود يكون منظم وسهل التطوير
+NFR-06	Testability	نقدروا نختابرو القواعد والعمليات
+NFR-07	Query Efficiency	    نتجنبو الاستعلامات غير الضرورية
+NFR-08	Pagination	نتحكمو فعدد النتائج المعروضة
+NFR-09	Data Retention	نحافظو على تاريخ التسجيلات
+NFR-10	Concurrent Capacity Safety	  الطلبات المتزامنة ما تفوتش السعة
+=================== 9. Out of Scope  ===================
+Feature	Decision
+Student Login Portal	خارج النسخة الأولى
+Professor Login Portal	خارج النسخة الأولى
+JWT / Roles / Permissions	Future Security Phase
+Payment Gateway	Out of scope
+Invoicing	Out of scope
+Attendance Tracking	Out of scope
+Professor Salary Management	Out of scope
+Classroom Reservation	Out of scope
+Email / SMS Notifications	Out of scope
+Redis / Kafka / RabbitMQ	Out of scope
+Microservices	Out of scope
+=================== 10. Acceptance Criteria  ===================
+AC-01 — Successful Enrollment Request
+   Given an ACTIVE student
+   And an ACTIVE course
+   And no active enrollment for this student in this course
+
+   When the staff requests enrollment
+
+   Then a new PENDING enrollment is created
+AC-02 — Duplicate Enrollment Rejection
+   Given a student with an existing PENDING enrollment
+   And the same course
+
+   When the staff requests another enrollment
+
+   Then the request is rejected
+   And no duplicate enrollment is created
+AC-03 — Automatic Promotion
+   Given a course at full capacity
+   And eligible pending enrollments
+   And the oldest eligible request belongs to Sara
+
+   When a CONFIRMED enrollment is cancelled
+
+   Then the cancelled enrollment becomes CANCELLED
+   And Sara's enrollment becomes CONFIRMED
+   And the confirmed count does not exceed capacity
+AC-04 — Student Deactivation
+   Given an ACTIVE student
+   And one CONFIRMED enrollment
+   And one PENDING enrollment
+
+   When the student is deactivated
+
+   Then the student becomes INACTIVE
+   And the PENDING enrollment becomes CANCELLED
+   And the CONFIRMED enrollment remains unchanged
+=================== 11. Requirements Traceability ===================
+FR-20 — Cancel Enrollment --> BR-28 — Automatic Promotion --> UML — Cancellation Workflow  --> Spring Boot Implementation --> AC-03 — Automated Verification
+===================  ===================
